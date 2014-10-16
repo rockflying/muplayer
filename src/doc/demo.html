@@ -5,7 +5,9 @@
     <title>MuPlayer『百度音乐播放内核』</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="dist/css/demo.css">
+    <link rel="stylesheet" href="bower_components/prism/themes/prism.css">
+    <link rel="stylesheet" href="bower_components/prism/plugins/line-numbers/prism-line-numbers.css">
+    <link rel="stylesheet" href="css/demo.css">
 </head>
 <body>
     <header id="header" class="navbar navbar-fixed-top" role="banner">
@@ -42,29 +44,52 @@
         <div class="mod">
             <div class="hd">快速上手</div>
             <div class="bd">
-                <script src="https://gist.github.com/hustKiwi/9682427.js"></script>
+                <p>
+                    使用MuPlayer首先要引入MuPlayer对应版本的JS文件。你可以直接从
+                    <a target="_blank" href="https://github.com/Baidu-Music-FE/muplayer/tree/master/dist">github上</a>下载，
+                    或使用<a target="_blank" href="http://bower.io/">Bower</a>下载编译后的MuPlayer静态文件，并托管在自己的静态服务器上。
+                    同时，你也可以如下面例子中展示的那样，直接使用我们放在百度音乐CDN上的对应版本的静态资源文件。
+                </p>
+                <p>
+                    在网站加载jQuery类库的后面，引入MuPlayer。之后便可以初始化一个MuPlayer实例（ <code>baseDir</code> 是必填初始化参数，指向刚才签出的MuPlayer静态资源目录），添加一段mp3音频，开始播放：
+                </p>
+                <pre class="line-numbers"><code class="language-javascript">
+&lt;script src="http://code.jquery.com/jquery-1.11.0.min.js"&gt;&lt;/script&gt;
+&lt;!- 引入对应版本的MuPlayer，要置于jQuery之后。-&gt;
+&lt;script src="http://mu7.bdstatic.com/cms/app/muplayer/0_9_2/player.js"&gt;&lt;/script&gt;
+
+&lt;script&gt;
+    // 初始化一个MuPlayer的实例。注意，我们默认使用了_mu全局命名空间。
+    var player = new _mu.Player({
+        // baseDir是必填初始化参数，指向刚才签出的MuPlayer静态资源目录
+        baseDir: 'http://mu7.bdstatic.com/cms/app/muplayer/0_9_1/'
+    });
+
+    // 通过add方法添加需要播放的音频，并调用play方法开始播放。
+    player.add('http://music.baidu.com/cms/app/muplayer/test_mp3/1.mp3').play();
+&lt;/script&gt;
+                </code></pre>
             </div>
         </div>
 
         <iframe id="ifm-playlist-demo" scrolling="no" src="playlist-demo.html"></iframe>
         <iframe id="ifm-player-demo" scrolling="no" src="player-demo.html"></iframe>
+        <iframe id="ifm-equalizer-demo" scrolling="no" src="equalizer-demo.html"></iframe>
     </section>
 
     <footer class="bs-footer">
         <div class="container">
-            <p><code>MuPlayer</code>: <a href="https://github.com/Baidu-Music-FE/muplayer">https://github.com/Baidu-Music-FE/muplayer</a></p>
-            <p>Copyright (c) 2014 music-fe@baidu.com <a href="http://weibo.com/musicfe">@musicfe</a></p>
+            <p><code>MuPlayer</code>: <a target="_blank" href="https://github.com/Baidu-Music-FE/muplayer">https://github.com/Baidu-Music-FE/muplayer</a></p>
+            <p class="copyright">
+                Copyright (c) 2014<a target="_blank" href="http://labs.music.baidu.com">
+                @MusicLab</a><a target="_blank" href="http://weibo.com/musicfe">@音乐前端</a>
+            </p>
         </div>
     </footer>
 
     <script src="bower_components/jquery/jquery.min.js"></script>
-    <script>
-    $(function() {
-        $('iframe').load(function() {
-            $(this).height($(this).contents().height());
-        });
-    });
-    </script>
+    <script src="bower_components/prism/prism.js"></script>
+    <script src="bower_components/prism/plugins/line-numbers/prism-line-numbers.min.js"></script>
 
     <div style="display: none">
         <script>

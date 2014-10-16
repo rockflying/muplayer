@@ -6,7 +6,7 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="bower_components/prism/themes/prism.css">
-    <link rel="stylesheet" href="dist/css/api.css">
+    <link rel="stylesheet" href="css/api.css">
   </head>
   <body>
     <header id="header" class="navbar navbar-inverse navbar-fixed-top bs-docs-nav">
@@ -29,9 +29,7 @@
         <p> —— 跨平台、轻量级的音频播放解决方案。</p>
         <ul class="advantages">
           <li><i class="glyphicon glyphicon-ok"></i>多端（PC & WebApp）通用，统一的API调用方式</li>
-          <li><i class="glyphicon glyphicon-ok"></i>
-            <HTML5>Audio与Flash内核的平滑切换（支持IE 6在内的所有常见浏览器）</HTML5>
-          </li>
+          <li><i class="glyphicon glyphicon-ok"></i>HTML5 Audio与Flash内核的平滑切换（支持IE 6在内的所有常见浏览器）</li>
           <li><i class="glyphicon glyphicon-ok"></i>文档完善，API设计灵活简洁</li>
           <li><i class="glyphicon glyphicon-ok"></i>针对WebApp端的优化打包，节省加载资源</li>
           <li><i class="glyphicon glyphicon-ok"></i>百度多条产品线上实际应用，稳定可靠</li>
@@ -40,45 +38,78 @@
     </section>
     <section class="container bs-docs-container">
       <section id="Main"><h2 id="-">概述</h2>
-<p><strong>MuPlayer</strong> 是百度<a href="http://weibo.com/musicfe">音乐前端</a>团队开发维护的浏览端音频播放内核，它基于HTML5 Audio及Flash音频技术，实现了<em>多端通用（PC &amp; WebApp）、浏览器兼容（ie6+、firefox、chrome、safari etc）及可扩展的多音频格式解码插件</em>的音频文件播放功能，并在百度音乐多个线上产品线中应用，具备相当的灵活性和稳定性。</p>
-<h2 id="-">源码目录</h2>
-<pre><code class="lang-text">muplayer/
-  +src/             (源码)
-    +demo.html      (一个完整的播放器demo示例)
-  +lib/             (第三方库、工具及grunt编译等)
-    +Gruntfile.js   (grunt配置)
-    +bower.json     (demo运行需要安装的静态文件声明)
-    +package.json   (grunt和bower等npm包的安装依赖声明)
-  +doc/             (本地Demo及API文档)
-  +test/            (qunit test)
-  +dist/            (grunt编译后生成的最终引用文件)</code></pre>
-<h2 id="-demo">签出源码并运行本地Demo</h2>
-<p>签出代码并安装必要依赖需执行：</p>
-<pre><code class="lang-shell">curl https://raw.githubusercontent.com/Baidu-Music-FE/muplayer/lib/install.sh | sh</code></pre>
-<p>之后进入lib/目录并运行 <code>grunt server [-p your port]</code>，可在 <code>localhost</code> 开启一个webserver。其中，-p为可选参数，可以指定server开启的端口（默认是7777）：</p>
-<pre><code class="lang-shell">cd muplayer/lib
-grunt server</code></pre>
-<p>之后，便可以访问并查看 <a href="http://localhost:7777/">本地文档及Demo</a> 了。</p>
-<h2 id="api-">API详解</h2>
-<p>参见：<a href="http://labs.music.baidu.com/demo/muplayer/doc/api.html">MuPlayer API</a></p>
-<h2 id="-">事件说明</h2>
-<p>在播放内核的实现中，事件的派发非常重要，这是解耦内核与UI交互的最佳方式 (客户端可自行监听需要的事件并做出相应的UI响应)。除上述部分API方法会派发诸如player:play，player:add等操作相关的事件外，下面还讲对播放状态相关的事件做一说明。<br>所有事件常量见 <code>cfg.coffee</code> 中的声明。默认对外派发的事件遵循精简且与HTML5 Auido规范统一的原则，player实例对外派发的事件点有三个：</p>
+<p><strong>MuPlayer</strong> 是百度 <a href="http://weibo.com/musicfe">@音乐前端</a> 团队开发维护的浏览端音频播放内核，它基于 HTML5 Audio 及 Flash 音频技术，实现了<em>多端通用（PC &amp; WebApp）、浏览器兼容（ie6+、firefox、chrome、safari etc）及可扩展的多音频格式解码插件</em>的音频文件播放功能，并在百度音乐多个线上产品线中应用，具备相当的灵活性和稳定性。</p>
+<h2 id="-">安装</h2>
+<p>你可以使用 <a href="https://github.com/bower/bower">bower</a> 安装</p>
+<pre><code>bower install muplayer</code></pre>
+<p>或者到发布页面下载压缩文档：<a href="https://github.com/Baidu-Music-FE/muplayer/releases">Releases</a></p>
+<p>具体使用方法请参见文档部分。</p>
+<h2 id="-">文档</h2>
+<h3 id="-muplayer-api-http-labs-music-baidu-com-demo-muplayer-doc-api-html-">参见：<a href="http://labs.music.baidu.com/demo/muplayer/doc/api.html">MuPlayer API</a></h3>
+<h3 id="-demo-http-labs-music-baidu-com-demo-muplayer-doc-demo-html-">示例：<a href="http://labs.music.baidu.com/demo/muplayer/doc/demo.html">Demo</a></h3>
+<h2 id="-">为项目贡献代码</h2>
 <ol>
-<li><code>EVENTS.STATECHANGE</code> 时，派发具体的change后的新状态。因此可以监听cfg.coffee中定义的所有STATES常量对应的状态。</li>
-<li><code>EVENTS.POSITIONCHANGE</code> 时，会派发timeupdate事件。</li>
-<li><code>EVENTS.PROGRESS</code> 时，会派发progress事件。<br>若以上均无法满足需求(在我们内部的产品中，还未曾遇到)，可以进一步监听player.engine的相应事件。</li>
+<li>签出项目<pre><code>git clone https://github.com/Baidu-Music-FE/muplayer.git
+cd muplayer</code></pre>
+</li>
+<li>如果你没有全局安装 <a href="http://coffeescript.org/">coffee</a>，请先安装它<pre><code>npm install -g coffee-script</code></pre>
+</li>
+<li><p>安装依赖</p>
+<pre><code>npm install</code></pre>
+<p>这个步骤会提示你是否安装 Flex SDK，如果选择 <code>no</code>， 项目会利用现有的编译好的 <code>swf</code> 文件。如果你希望更改 action script 源码并编译，请选择 <code>yes</code>，注意这个 SDK 可能会需要下载 400MB 的依赖。如果想自动选择默认项安装（安静模式），请运行 <code>quiet=true npm install</code></p>
+</li>
+<li><p>编译</p>
+<pre><code>cake build</code></pre>
+<p>编译好的文件会保存到 <code>dist</code> 文件夹。</p>
+</li>
 </ol>
-<h2 id="license">License</h2>
-<p><strong>MuPlayer</strong> is released under the MIT License.<br>Copyright (c) 2014 Baidu Music</p>
-<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
-<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
-<p>THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+<h2 id="-">修订文档</h2>
+<ol>
+<li><p>编译文档</p>
+<pre><code>cake doc</code></pre>
+</li>
+<li><p>预览文档需要启动本地服务器，启动后访问 <a href="http://127.0.0.1:8077">http://127.0.0.1:8077</a></p>
+<pre><code>cake server</code></pre>
+<p>指定端口号</p>
+<pre><code>cake -p 8080 server</code></pre>
+</li>
+</ol>
+<h2 id="-">使用案例</h2>
+<p><code>MuPlayer</code>本就源自百度音乐前端团队在产品开发上的积累，被用于多条在线产品及音乐服务上，如<a href="http://y.baidu.com">百度音乐人</a>，<a href="http://lebo.baidu.com">百度乐播</a>，及WebApp，是音乐前端的核心基础库之一。下面继续列举一些我们已知的第三方使用案例，以供参考：</p>
+<ol>
+<li>百度个人中心的音乐随心听模块：<a href="http://i.baidu.com/#ibx-mod-music">http://i.baidu.com/#ibx-mod-music</a></li>
+<li><a href="https://github.com/mozillazg">@mozillazg</a> 实现的音乐FM：<a href="https://github.com/mozillazg/lark">https://github.com/mozillazg/lark</a></li>
+<li><a href="https://github.com/alankell">@alankell</a> 的个人博客背景音播放：<a href="http://alankell.com/">http://alankell.com/</a></li>
+</ol>
+<h2 id="-">许可</h2>
+<pre><code>MuPlayer 实行 BSD 许可协议。
+版权 (c) 2014 Baidu Music。
+
+这份授权条款，在使用者符合以下三条件的情形下，授予使用者使用及再散播本
+软件包装原始码及二进位可执行形式的权利，无论此包装是否经改作皆然：
+
+* 对于本软件源代码的再散播，必须保留上述的版权宣告、此三条件表列，以
+  及下述的免责声明。
+* 对于本套件二进位可执行形式的再散播，必须连带以文件以及／或者其他附
+  于散播包装中的媒介方式，重制上述之版权宣告、此三条件表列，以及下述
+  的免责声明。
+* 未获事前取得书面许可，不得使用柏克莱加州大学或本软件贡献者之名称，
+  来为本软件之衍生物做任何表示支持、认可或推广、促销之行为。
+
+免责声明：本软件是由加州大学董事会及本软件之贡献者以现状（&quot;as is&quot;）提供，
+本软件包装不负任何明示或默示之担保责任，包括但不限于就适售性以及特定目
+的的适用性为默示性担保。加州大学董事会及本软件之贡献者，无论任何条件、
+无论成因或任何责任主义、无论此责任为因合约关系、无过失责任主义或因非违
+约之侵权（包括过失或其他原因等）而起，对于任何因使用本软件包装所产生的
+任何直接性、间接性、偶发性、特殊性、惩罚性或任何结果的损害（包括但不限
+于替代商品或劳务之购用、使用损失、资料损失、利益损失、业务中断等等），
+不负任何责任，即在该种使用已获事前告知可能会造成此类损害的情形下亦然。</code></pre>
 </section>
     </section>
     <footer class="bs-footer">
       <div class="container">
-        <p><code>MuPlayer</code>: <a href="https://github.com/Baidu-Music-FE/muplayer">https://github.com/Baidu-Music-FE/muplayer</a></p>
-        <p>Copyright (c) 2014 music-fe@baidu.com <a href="http://weibo.com/musicfe">@musicfe</a></p>
+        <p><code>MuPlayer</code>:<a href="https://github.com/Baidu-Music-FE/muplayer" target="_blank">https://github.com/Baidu-Music-FE/muplayer</a></p>
+        <p class="copyright">Copyright (c) 2014<a target="_blank" href="http://labs.music.baidu.com">@MusicLab</a><a target="_blank" href="http://weibo.com/musicfe">@音乐前端</a></p>
       </div>
     </footer>
     <script src="bower_components/jquery/jquery.min.js"></script>
@@ -87,44 +118,44 @@ grunt server</code></pre>
     <script src="bower_components/prefixfree/prefixfree.min.js"></script>
     <script>
       $(function() {
-          var $win = $(window),
-              $body = $(document.body),
-              $sideBar = $('.bs-sidebar'),
-              navHeight = $('.bs-docs-nav').outerHeight(true) + 10;
-              
-          $body.scrollspy({
-              target: '.bs-sidebar',
-              offset: navHeight
-          });
+        var $win = $(window),
+          $body = $(document.body),
+          $sideBar = $('.bs-sidebar'),
+          navHeight = $('.bs-docs-nav').outerHeight(true) + 10;
           
-          $win.on('load', function() {
-              $body.scrollspy('refresh');
+        $body.scrollspy({
+          target: '.bs-sidebar',
+          offset: navHeight
+        });
+        
+        $win.on('load', function() {
+          $body.scrollspy('refresh');
+        });
+        
+        setTimeout(function() {
+          $sideBar.affix({
+            offset: {
+              top: function() {
+                var offsetTop = $sideBar.offset().top;
+                return (this.top = offsetTop - navHeight);
+              },
+              bottom: function() {
+                return (this.bottom = $('.bs-footer').outerHeight(true));
+              }
+            }
           });
+        }, 100);
+        
+        $sideBar.on('click', 'a[href^=#]', function() {
+          var id = $(this).attr('href').substr(1),
+            top = $('#'+ id).offset().top - navHeight + 10;
+            
+          $('html, body').animate({
+            scrollTop: top
+          }, 300);
           
-          setTimeout(function() {
-              $sideBar.affix({
-                  offset: {
-                      top: function() {
-                          var offsetTop = $sideBar.offset().top;
-                          return (this.top = offsetTop - navHeight);
-                      },
-                      bottom: function() {
-                          return (this.bottom = $('.bs-footer').outerHeight(true));
-                      }
-                  }
-              });
-          }, 100);
-          
-          $sideBar.on('click', 'a[href^=#]', function() {
-              var id = $(this).attr('href').substr(1),
-                  top = $('#'+ id).offset().top - navHeight + 10;
-                  
-              $('html, body').animate({
-                  scrollTop: top
-              }, 300);
-              
-              return false;
-          });
+          return false;
+        });
       });
       
     </script>
@@ -134,10 +165,10 @@ grunt server</code></pre>
         document.write(unescape("%3Cscript src='" + _bdhmProtocol + "hm.baidu.com/h.js%3F89a467ff5d4c7c906a933623c7db27bb'%3E%3C/script%3E"));
         
         try {
-            if (console && console.log) {
-                console.log('加入百度音乐前端，跟我们做些有挑战的趣事？');
-                console.info && console.info('简历请发 %c musicfe-hr@baidu.com', 'color: #c7254e');
-            }
+          if (console && console.log) {
+            console.log('加入百度音乐前端，跟我们做些有挑战的趣事？');
+            console.info && console.info('简历请发 %c musicfe-hr@baidu.com', 'color: #c7254e');
+          }
         } catch (e) {}
       </script>
     </div>

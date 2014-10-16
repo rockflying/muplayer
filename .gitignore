@@ -1,9 +1,16 @@
-# Customized
+# Customized #
+##############
 *.swp
 *.swo
-lib/.sass-cache
-lib/node_modules
-lib/bower_components
+.idea
+.sass-cache
+dist/*.swf.b
+dist/*.swf.cache
+
+# Dependencies #
+################
+node_modules
+bower_components
 
 # Compiled source #
 ###################

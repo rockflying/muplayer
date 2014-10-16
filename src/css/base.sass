@@ -66,10 +66,16 @@ iframe
     border: none
     width: 100%
 
-ul, li
-    list-style: none
+h1, h2
+    margin-top: 40px
+
+ul, ol
     padding: 0
-    margin: 0
+    margin-bottom: 0
+    &, li
+        list-style: none
+        padding: 0
+        margin: 0
 
 #header
     background: $blue
@@ -139,3 +145,15 @@ ul, li
     margin-top: 100px
     color: $grey
     border-top: 1px solid #e5e5e5
+    .copyright
+        a
+            margin-left: 15px
+
+pre.language-javascript
+    font-size: 14px
+    padding-bottom: 1.2em
+    &.hotfix
+        padding-top: 1.8em
+        padding-bottom: 1.8em
+        code
+            top: -12px

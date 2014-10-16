@@ -1,77 +1,82 @@
 ##
 # EngineCore是FlashMP3Core, AudioCore等播放内核的基类
 ##
-do (root = this, factory = (cfg, utils, Events) ->
+do (root = @, factory = (cfg, utils, Events) ->
     {EVENTS, STATES} = cfg.engine
     availableStates = (v for k, v of STATES)
 
     class EngineCore
         _supportedTypes: []
 
-        getSupportedTypes: () ->
+        getSupportedTypes: ->
             @_supportedTypes
 
         canPlayType: (type) ->
             return $.inArray(type, @getSupportedTypes()) isnt -1
 
-        reset: () ->
+        reset: ->
             @stop()
             @setUrl()
-            @setState(STATES.END)
+            @trigger(EVENTS.PROGRESS, 0)
+            @trigger(EVENTS.POSITIONCHANGE, 0)
+
+        play: ->
             @
 
-        play: () ->
+        pause: ->
             @
 
-        pause: () ->
-            @
-
-        stop: () ->
+        stop: ->
             @
 
         setUrl: (url = '') ->
             @_url = url
             @
 
-        getUrl: () ->
+        getUrl: ->
             @_url
 
         setState: (st) ->
-            if st in availableStates and st isnt @_state
-                oldState = @_state
-                @_state = st
-                @trigger(EVENTS.STATECHANGE,
-                    oldState: oldState
-                    newState: st
-                )
+            if st not in availableStates or st is @_state
+                return
 
-        getState: () ->
+            if st is STATES.BUFFERING and @_state in [STATES.END, STATES.PAUSE, STATES.STOP]
+                return
+
+            oldState = @_state
+            @_state = st
+            @trigger(EVENTS.STATECHANGE,
+                oldState: oldState
+                newState: st
+            )
+
+        getState: ->
             @_state
 
         setVolume: (volume) ->
             @_volume = volume
             @
 
-        getVolume: () ->
+        getVolume: ->
             @_volume
 
         setMute: (mute) ->
             @_mute = mute
             @
 
-        getMute: () ->
+        getMute: ->
             @_mute
 
         setCurrentPosition: (ms) ->
             @
 
-        getCurrentPosition: () ->
+        getCurrentPosition: ->
             0
 
-        getLoadedPercent: () ->
+        getLoadedPercent: ->
             0
 
-        getTotalTime: () ->
+        getTotalTime: ->
             0
 
     Events.mixTo(EngineCore)

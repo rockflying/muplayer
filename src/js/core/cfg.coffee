@@ -1,20 +1,21 @@
-do (root = this, factory = () ->
-    root = this
+do (root = @, factory = ->
+    root = @
 
     return $.extend({
         namespace: root._mu
         debug: false
-        version: '0.9.0'
+        version: '0.9.2'
 
         # XXX: timerResolution = 25ms是最小的计时粒度,
         # 这个不经测试调优就尽量不要改, 会影响部分统计数据和性能。
         timerResolution: 25
 
-        emptyMP3: '../dist/mp3/empty.mp3'
-        expressInstaller: '../dist/swf/expressInstall.swf'
+        cdn: 'http://apps.bdimg.com/libs/muplayer/'
+
         engine:
             TYPES:
                 FLASH_MP3: 'FlashMP3Core'
+                FLASH_MP4: 'FlashMP4Core'
                 AUDIO: 'AudioCore'
             EVENTS:
                 STATECHANGE: 'engine:statechange'       # 播放状态改变事件(STATES)
@@ -25,15 +26,14 @@ do (root = this, factory = () ->
                 INIT_FAIL: 'engine:init_fail'           # 播放器初始化失败时的事件
 
             # 状态影响EVENTS.STATECHANGE派发的事件，原则上派发的事件应保持和HTML5 Audio规范一致。
-            # 但也有些biao'z标注播放器状态的特殊事件，如NOT_INIT等。
             # HTML5 Audio相关事件可参考: http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html#mediaevents
             STATES:
-                NOT_INIT: 'not_init'
-                PREBUFFER: 'prebuffer'
-                BUFFERING: 'buffering'
+                CANPLAYTHROUGH: 'canplaythrough'
+                PREBUFFER: 'waiting'
+                BUFFERING: 'loadeddata'
                 PLAYING: 'playing'
                 PAUSE: 'pause'
-                STOP: 'stop'
+                STOP: 'suspend'
                 END: 'ended'
 
             # 内核错误码, 参考HTML5 Audio错误状态:

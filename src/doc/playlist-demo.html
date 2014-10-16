@@ -1,23 +1,33 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
+
 <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="dist/css/playlist-demo.css">
+<link rel="stylesheet" href="bower_components/prism/themes/prism.css">
+<link rel="stylesheet" href="bower_components/prism/plugins/line-numbers/prism-line-numbers.css">
+<link rel="stylesheet" href="css/playlist-demo.css">
 
 <div class="mod">
     <div class="hd">播放列表及交互</div>
     <div class="bd">
         <ul id="playlist-demo">
-            <li data-link="dist/mp3/rain.mp3"><i class="play-btn"></i>雨声</li>
-            <li data-link="dist/mp3/walking.mp3"><i class="play-btn"></i>走路声</li>
+            <li data-link="mp3/rain.mp3"><i class="play-btn"></i>雨声(mp3)</li>
+            <li data-link="mp3/walking.mp3"><i class="play-btn"></i>脚步声(mp3)</li>
+            <li data-link="mp3/xihu.mp3"><i class="play-btn"></i>西湖(mp3)</li>
         </ul>
-        <script src="https://gist.github.com/hustKiwi/d4cb4eab9402ff56e28f.js"></script>
+        <pre class="line-numbers hotfix"><code class="language-javascript"></code></pre>
     </div>
 </div>
 
 <script src="bower_components/jquery/jquery.min.js"></script>
-<script src="dist/js/player.js"></script>
-<script>
+<script src="bower_components/prism/prism.js"></script>
+<script src="bower_components/prism/plugins/line-numbers/prism-line-numbers.min.js"></script>
+<script src="dist/player.js"></script>
+<script src="js/doc.js"></script>
+
+<script id="code">
 // 通过全局变量的方式初始化
 var player = new _mu.Player({
-        mode: 'list'
+        mode: 'list',
+        baseDir: 'dist'
     }),
     $pl = $('#playlist-demo'),
     reset = function() {
@@ -25,26 +35,40 @@ var player = new _mu.Player({
             .find('.time').remove();
     },
     findCurrItem = function() {
-        return $pl.find('[data-link="' + player.getCur() + '"]');
+        var link = player.getCur();
+        link = link.substring(link.indexOf('mp3/'));
+        return $pl.find('[data-link="' + link + '"]');
     },
     $time = $('<span class="time"></span>');
 
 $pl.on('click', '> li', function() {
-    if ($(this).hasClass('playing')) {
+    var $this = $(this),
+        sids;
+
+    if ($this.hasClass('playing')) {
         player.pause();
+    } else if ($this.hasClass('pause')) {
+        player.play();
     } else {
-        var link = $(this).data('link');
-        player.reset().add(link).play();
+        sids = $this.parent().find('> li').map(function() {
+            return $(this).data('link');
+        }).get();
+
+        player.reset().add(sids)
+            .setCur($this.data('link')).play();
     }
 });
 
 player.on('playing pause', function() {
     reset();
     findCurrItem().addClass(player.getState()).append($time);
-}).on('ended', function() {
-    player.stop();
-    reset();
-}).on('timeupdate', function() {
+}).on('ended', reset).on('timeupdate', function() {
     $time.text(player.curPos(true) + ' / ' + player.duration(true));
+});
+</script>
+
+<script>
+$(function() {
+    _mu.doc.init('playlist');
 });
 </script>

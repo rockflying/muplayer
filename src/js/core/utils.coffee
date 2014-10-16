@@ -1,4 +1,4 @@
-do (root = this, factory = (cfg) ->
+do (root = @, factory = (cfg) ->
     utils = {}
 
     StrProto = String.prototype
@@ -16,11 +16,11 @@ do (root = this, factory = (cfg) ->
                 toString.call(obj) == '[object ' + name + ']';
 
     unless $.isFunction(StrProto.startsWith)
-        StrProto = (str) ->
+        StrProto.startsWith = (str) ->
             @slice(0, str.length) is str
 
     unless $.isFunction(StrProto.endsWith)
-        StrProto = (str) ->
+        StrProto.endsWith = (str) ->
             return @slice(-str.length) is str
 
     # ref: http://stackoverflow.com/questions/10470810/javascript-tofixed-bug-in-ie6
@@ -36,14 +36,6 @@ do (root = this, factory = (cfg) ->
         fixed
 
     $.extend utils, {
-        isEmpty: (obj) ->
-            unless obj? then return true
-            if $.isArray(obj) or @isString(obj)
-                return obj.length is 0
-            for key in obj
-                if @has(obj, key) then return false
-            true
-
         isBoolean: (obj) ->
             obj is true or obj is false or toString.call(obj) is '[object Boolean]'
 
@@ -64,10 +56,6 @@ do (root = this, factory = (cfg) ->
                 shuffled[i - 1] = shuffled[rand]
                 shuffled[rand] = item
             shuffled
-
-        clone: (obj) ->
-            unless $.isPlainObject(obj) then obj
-            if $.isArray(obj) then obj.slice() else $.extend({}, obj)
 
         time2str: (time) ->
             r = []
@@ -98,7 +86,7 @@ do (root = this, factory = (cfg) ->
         # 示例:
         #    Creates `_mu.property.package`.
         #    namespace('property.package');
-        namespace: () ->
+        namespace: ->
             a = arguments
             period = '.'
             for arg in a
@@ -107,20 +95,29 @@ do (root = this, factory = (cfg) ->
                     d = arg.split(period)
                     [i, l] = [0, d.length]
                     while i < l
-                        o[d[i]] = o[d[i]] || {}
+                        o[d[i]] = o[d[i]] or {}
                         o = o[d[i]]
                         i++
                 else
-                    o[arg] = o[arg] = {}
+                    o[arg] = o[arg] or {}
                     o = o[arg]
             o
 
         # 参考underscore
         wrap: (func, wrapper) ->
-            () ->
+            ->
                 args = [func]
                 push.apply(args, arguments)
                 wrapper.apply(@, args)
+
+        # 获得资源的绝对路径
+        # 参考: http://grack.com/blog/2009/11/17/absolutizing-url-in-javascript/
+        toAbsoluteUrl: (url) ->
+            div = document.createElement('div')
+            div.innerHTML = '<a></a>'
+            div.firstChild.href = url
+            div.innerHTML = div.innerHTML
+            div.firstChild.href
     }
 
     utils

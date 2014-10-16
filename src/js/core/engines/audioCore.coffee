@@ -1,4 +1,4 @@
-do (root = this, factory = (cfg, utils, EngineCore, Modernizr) ->
+do (root = @, factory = (cfg, utils, EngineCore, Modernizr) ->
     win = window
     {TYPES, EVENTS, STATES, ERRCODE} = cfg.engine
 
@@ -9,12 +9,16 @@ do (root = this, factory = (cfg, utils, EngineCore, Modernizr) ->
             confidence: 'maybe'
             preload: false
             autoplay: false
-            emptyMP3: cfg.emptyMP3
+            needPlayEmpty: true
+            emptyMP3: 'empty.mp3'
         _supportedTypes: []
         engineType: TYPES.AUDIO
 
         constructor: (options) ->
-            @opts = opts = $.extend(AudioCore.defaults, options)
+            @opts = $.extend({}, AudioCore.defaults, options)
+            @opts.emptyMP3 = @opts.baseDir + @opts.emptyMP3
+            opts = @opts
+
             levels =
                 '': 0
                 maybe: 1
@@ -43,58 +47,75 @@ do (root = this, factory = (cfg, utils, EngineCore, Modernizr) ->
             @_needCanPlay([
                 'play', 'setCurrentPosition'
             ])
+            @setState(STATES.STOP)
             @_initEvents()
 
             # 用于HACK Audio在IOS上的限制, 参考: http://www.ibm.com/developerworks/library/wa-ioshtml5/
-            playEmpty = () =>
-                @setUrl(opts.emptyMP3).play()
-                win.removeEventListener('touchstart', playEmpty, false)
-            win.addEventListener('touchstart', playEmpty, false)
+            if opts.needPlayEmpty
+                playEmpty = =>
+                    # 当前没有set过url时才set一个空音频，以免影响到成功自动播放的后续交互
+                    unless @getUrl()
+                        @setUrl(opts.emptyMP3).play()
+                    win.removeEventListener('touchstart', playEmpty, false)
+                win.addEventListener('touchstart', playEmpty, false)
 
-        _test: (trigger) ->
-            return false if Modernizr.audio is false or @_supportedTypes.length is 0
-            trigger and @trigger(EVENTS.INIT_FAIL, @engineType)
+        _test: ->
+            if not Modernizr.audio or not @_supportedTypes.length
+                return false
             true
 
         # 事件类型参考: http://www.w3schools.com/tags/ref_eventattributes.asp
-        _initEvents: () ->
-            trigger = @trigger
-            @trigger = (type, listener) =>
-                trigger.call(@, type, listener) if @getUrl() isnt @opts.emptyMP3
+        _initEvents: ->
+            self = @
+            { audio, trigger } = @
+            [ errorTimer, progressTimer, canPlayThrough ]  = [ null, null, false ]
 
-            buffer = (per) =>
-                @setState(STATES.BUFFERING)
-                @trigger(EVENTS.PROGRESS, per or @getLoadedPercent())
+            @trigger = (type, listener) ->
+                trigger.call(self, type, listener) if self.getUrl() isnt self.opts.emptyMP3
 
-            progressTimer = null
-            @audio.on('loadstart', () =>
-                audio = @audio
+            progress = (per) ->
+                per = per or self.getLoadedPercent()
+                self.trigger(EVENTS.PROGRESS, per)
+                if per is 1
+                    clearInterval(progressTimer)
+                    canPlayThrough = true
+                    self.setState(STATES.CANPLAYTHROUGH)
+
+            audio.on('loadstart', ->
+                canPlayThrough = false
                 # 某些IOS浏览器及Chrome会因歌曲缓存导致progress不被触发，此时使用
                 # “万能的”计时器轮询计算加载进度
-                progressTimer = setInterval(() ->
-                    return clearInterval(progressTimer) if audio.readyState > 1
-                    buffer()
+                clearInterval(progressTimer)
+                progressTimer = setInterval( ->
+                    progress()
                 , 50)
-                @setState(STATES.PREBUFFER)
-            ).on('playing', () =>
-                @setState(STATES.PLAYING)
-            ).on('pause', () =>
-                @setState(@getCurrentPosition() and STATES.PAUSE or STATES.STOP)
-            ).on('ended', () =>
-                @setState(STATES.END)
-            ).on('error', () =>
-                @setState(STATES.END)
-                @trigger(EVENTS.ERROR, ERRCODE.MEDIA_ERR_NETWORK)
-            ).on('waiting', () =>
-                @setState(@getCurrentPosition() and STATES.BUFFERING or STATES.PREBUFFER)
-            ).on('timeupdate', () =>
-                @trigger(EVENTS.POSITIONCHANGE, @getCurrentPosition())
+                self.setState(STATES.PREBUFFER)
+            ).on('playing', ->
+                clearTimeout(errorTimer)
+                self.setState(STATES.PLAYING)
+            ).on('pause', ->
+                self.setState(self.getCurrentPosition() and STATES.PAUSE or STATES.STOP)
+            ).on('ended', ->
+                self.setState(STATES.END)
+            ).on('error', (e) ->
+                clearTimeout(errorTimer)
+                errorTimer = setTimeout( ->
+                    self.trigger(EVENTS.ERROR, e.target.error.code)
+                    self.setState(STATES.END)
+                , 2000)
+            ).on('waiting', ->
+                self.setState(STATES.PREBUFFER)
+            ).on('loadeddata', ->
+                self.setState(STATES.BUFFERING)
+            ).on('timeupdate', ->
+                self.trigger(EVENTS.POSITIONCHANGE, self.getCurrentPosition())
             ).on('progress', (e) ->
                 clearInterval(progressTimer)
-                # firefox 3.6 implements e.loaded/total (bytes)
-                loaded = e.loaded or 0
-                total = e.total or 1
-                buffer(loaded and (loaded / total).toFixed(2) * 1)
+                unless canPlayThrough
+                    # firefox 3.6 implements e.loaded/total (bytes)
+                    loaded = e.loaded or 0
+                    total = e.total or 1
+                    progress(loaded and (loaded / total).toFixed(2) * 1)
             )
 
         _needCanPlay: (fnames) ->
@@ -104,7 +125,7 @@ do (root = this, factory = (cfg, utils, EngineCore, Modernizr) ->
                     # 对应的编码含义见: http://www.w3schools.com/tags/av_prop_readystate.asp
                     # 小于3认为还没有加载足够数据去播放。
                     if audio.readyState < 3
-                        handle = () =>
+                        handle = =>
                             fn.apply(@, args)
                             audio.off('canplay', handle)
                         audio.on('canplay', handle)
@@ -112,35 +133,36 @@ do (root = this, factory = (cfg, utils, EngineCore, Modernizr) ->
                         fn.apply(@, args)
                     @
 
-        play: () ->
+        play: ->
             @audio.play()
             @
 
-        pause: () ->
+        pause: ->
             @audio.pause()
             @
 
-        stop: () ->
+        stop: ->
             # FIXED: https://github.com/Baidu-Music-FE/muplayer/issues/2
             # 不能用setCurrentPosition(0)，似乎是因为_needCanPlay包装器使
             # 该方法成为了非同步方法, 导致执行顺序和预期不符。
             try
                 @audio.currentTime = 0
             catch
-            @pause()
+            finally
+                @pause()
+            @
 
-        setUrl: (url = '') ->
-            @audio.src = url
-            @audio.load()
+        setUrl: (url) ->
+            if url
+                @audio.src = url
+                @audio.load()
             super(url)
 
         setVolume: (volume) ->
-            @ unless 0 <= volume <= 100
             @audio.volume = volume / 100
             super(volume)
 
         setMute: (mute) ->
-            mute = !!mute
             @audio.muted = mute
             super(mute)
 
@@ -150,17 +172,16 @@ do (root = this, factory = (cfg, utils, EngineCore, Modernizr) ->
         setCurrentPosition: (ms) ->
             try
                 @audio.currentTime = ms / 1000
-            catch err
-                console?.error(err)
-            @play()
+            catch
+            finally
+                @play()
             @
 
-        getCurrentPosition: () ->
+        getCurrentPosition: ->
             @audio.currentTime * 1000
 
-        getLoadedPercent: () ->
+        getLoadedPercent: ->
             audio = @audio
-            duration = audio.duration
             buffered = audio.buffered
             bl = buffered.length
             be = 0 # buffered end
@@ -171,13 +192,20 @@ do (root = this, factory = (cfg, utils, EngineCore, Modernizr) ->
                     be = buffered.end(bl)
                     break
 
+            duration = @getTotalTime() / 1000
+
             # 修复部分浏览器出现buffered end > duration的异常。
             be = if be > duration then duration else be
             duration and (be / duration).toFixed(2) * 1 or 0
 
-        getTotalTime: () ->
-            duration = @audio.duration
-            # loadstart前duration为NaN。
+        getTotalTime: ->
+            { duration, buffered } = @audio
+            bl = buffered.length
+
+            # duration为NaN的情况。
+            if not isFinite(duration) and bl > 0
+                duration = buffered.end(--bl)
+
             duration and duration * 1000 or 0
 
     AudioCore

@@ -1,57 +1,90 @@
 ## 概述
-**MuPlayer** 是百度[音乐前端](http://weibo.com/musicfe)团队开发维护的浏览端音频播放内核，它基于HTML5 Audio及Flash音频技术，实现了*多端通用（PC & WebApp）、浏览器兼容（ie6+、firefox、chrome、safari etc）及可扩展的多音频格式解码插件*的音频文件播放功能，并在百度音乐多个线上产品线中应用，具备相当的灵活性和稳定性。
+**MuPlayer** 是百度 [@音乐前端](http://weibo.com/musicfe) 团队开发维护的浏览端音频播放内核，它基于 HTML5 Audio 及 Flash 音频技术，实现了*多端通用（PC & WebApp）、浏览器兼容（ie6+、firefox、chrome、safari etc）及可扩展的多音频格式解码插件*的音频文件播放功能，并在百度音乐多个线上产品线中应用，具备相当的灵活性和稳定性。
 
 
-## 源码目录
-```text
-muplayer/
-  +src/             (源码)
-    +demo.html      (一个完整的播放器demo示例)
-  +lib/             (第三方库、工具及grunt编译等)
-    +Gruntfile.js   (grunt配置)
-    +bower.json     (demo运行需要安装的静态文件声明)
-    +package.json   (grunt和bower等npm包的安装依赖声明)
-  +doc/             (本地Demo及API文档)
-  +test/            (qunit test)
-  +dist/            (grunt编译后生成的最终引用文件)
+## 安装
+你可以使用 [bower](https://github.com/bower/bower) 安装
+```
+bower install muplayer
 ```
 
+或者到发布页面下载压缩文档：[Releases](https://github.com/Baidu-Music-FE/muplayer/releases)
 
-## 签出源码并运行本地Demo
-签出代码并安装必要依赖需执行：
-
-```shell
-curl https://raw.githubusercontent.com/Baidu-Music-FE/muplayer/lib/install.sh | sh
-```
-
-之后进入lib/目录并运行 `grunt server [-p your port]`，可在 `localhost` 开启一个webserver。其中，-p为可选参数，可以指定server开启的端口（默认是7777）：
-
-```shell
-cd muplayer/lib
-grunt server
-```
-
-之后，便可以访问并查看 [本地文档及Demo](http://localhost:7777/) 了。
+具体使用方法请参见文档部分。
 
 
-## API详解
-参见：[MuPlayer API](http://labs.music.baidu.com/demo/muplayer/doc/api.html)
-
-## 事件说明
-在播放内核的实现中，事件的派发非常重要，这是解耦内核与UI交互的最佳方式 (客户端可自行监听需要的事件并做出相应的UI响应)。除上述部分API方法会派发诸如player:play，player:add等操作相关的事件外，下面还讲对播放状态相关的事件做一说明。
-所有事件常量见 `cfg.coffee` 中的声明。默认对外派发的事件遵循精简且与HTML5 Auido规范统一的原则，player实例对外派发的事件点有三个：
-1. `EVENTS.STATECHANGE` 时，派发具体的change后的新状态。因此可以监听cfg.coffee中定义的所有STATES常量对应的状态。
-2. `EVENTS.POSITIONCHANGE` 时，会派发timeupdate事件。
-3. `EVENTS.PROGRESS` 时，会派发progress事件。
-若以上均无法满足需求(在我们内部的产品中，还未曾遇到)，可以进一步监听player.engine的相应事件。
+## 文档
+### 参见：[MuPlayer API](http://labs.music.baidu.com/demo/muplayer/doc/api.html)
+### 示例：[Demo](http://labs.music.baidu.com/demo/muplayer/doc/demo.html)
 
 
-## License
-**MuPlayer** is released under the MIT License.
-Copyright (c) 2014 Baidu Music
+## 为项目贡献代码
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ 1. 签出项目
+ ```
+ git clone https://github.com/Baidu-Music-FE/muplayer.git
+cd muplayer
+ ```
+ 2. 如果你没有全局安装 [coffee](http://coffeescript.org/)，请先安装它
+ ```
+ npm install -g coffee-script
+ ```
+ 3. 安装依赖
+ ```
+ npm install
+ ```
+ 这个步骤会提示你是否安装 Flex SDK，如果选择 `no`， 项目会利用现有的编译好的 `swf` 文件。如果你希望更改 action script 源码并编译，请选择 `yes`，注意这个 SDK 可能会需要下载 400MB 的依赖。如果想自动选择默认项安装（安静模式），请运行 `quiet=true npm install`
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ 4. 编译
+ ```
+ cake build
+ ```
+ 编译好的文件会保存到 `dist` 文件夹。
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## 修订文档
+
+ 1. 编译文档
+  ```
+  cake doc
+  ```
+
+ 2. 预览文档需要启动本地服务器，启动后访问 http://127.0.0.1:8077
+  ```
+  cake server
+  ```
+  指定端口号
+  ```
+  cake -p 8080 server
+  ```
+
+## 使用案例
+`MuPlayer`本就源自百度音乐前端团队在产品开发上的积累，被用于多条在线产品及音乐服务上，如[百度音乐人](http://y.baidu.com)，[百度乐播](http://lebo.baidu.com)，及WebApp，是音乐前端的核心基础库之一。下面继续列举一些我们已知的第三方使用案例，以供参考：
+
+ 1. 百度个人中心的音乐随心听模块：http://i.baidu.com/#ibx-mod-music
+ 2. [@mozillazg](https://github.com/mozillazg) 实现的音乐FM：https://github.com/mozillazg/lark
+ 3. [@alankell](https://github.com/alankell) 的个人博客背景音播放：http://alankell.com/
+
+## 许可
+    MuPlayer 实行 BSD 许可协议。
+    版权 (c) 2014 Baidu Music。
+
+    这份授权条款，在使用者符合以下三条件的情形下，授予使用者使用及再散播本
+    软件包装原始码及二进位可执行形式的权利，无论此包装是否经改作皆然：
+
+    * 对于本软件源代码的再散播，必须保留上述的版权宣告、此三条件表列，以
+      及下述的免责声明。
+    * 对于本套件二进位可执行形式的再散播，必须连带以文件以及／或者其他附
+      于散播包装中的媒介方式，重制上述之版权宣告、此三条件表列，以及下述
+      的免责声明。
+    * 未获事前取得书面许可，不得使用柏克莱加州大学或本软件贡献者之名称，
+      来为本软件之衍生物做任何表示支持、认可或推广、促销之行为。
+
+    免责声明：本软件是由加州大学董事会及本软件之贡献者以现状（"as is"）提供，
+    本软件包装不负任何明示或默示之担保责任，包括但不限于就适售性以及特定目
+    的的适用性为默示性担保。加州大学董事会及本软件之贡献者，无论任何条件、
+    无论成因或任何责任主义、无论此责任为因合约关系、无过失责任主义或因非违
+    约之侵权（包括过失或其他原因等）而起，对于任何因使用本软件包装所产生的
+    任何直接性、间接性、偶发性、特殊性、惩罚性或任何结果的损害（包括但不限
+    于替代商品或劳务之购用、使用损失、资料损失、利益损失、业务中断等等），
+    不负任何责任，即在该种使用已获事前告知可能会造成此类损害的情形下亦然。

@@ -2,6 +2,28 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
     {EVENTS, STATES} = cfg.engine
     time2str = utils.time2str
 
+    ctrl = (fname, auto) ->
+        unless fname in ['prev', 'next']
+            return @
+
+        @stop()
+
+        pl = @playlist
+        play = =>
+            args =
+                cur: @getCur()
+            args.auto = auto if auto
+            @trigger "player:#{fname}", args
+            @play()
+
+        if @getSongsNum()
+            unless pl.cur
+                play()
+            else if pl[fname]()
+                play()
+
+        @
+
     ###*
      * muplayer的Player类（对应player.js）是对外暴露的接口，它封装了音频操作及播放列表（Playlist）逻辑，并屏蔽了对音频内核适配的细节对音频内核适配的细节。
      * <b>对一般应用场景，只需签出编译后的 <code>dist/js/player.min.js</code> 即可</b>。
@@ -11,9 +33,12 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
         instance = null
 
         @defaults:
+            baseDir: "#{cfg.cdn}#{cfg.version}"
             mode: 'loop'
             mute: false
             volume: 80
+            singleton: true
+            absoluteUrl: true
 
         ###*
          * Player初始化方法
@@ -23,8 +48,12 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
          *    <th>说明</th>
          *  </tr>
          *  <tr>
+         *    <td>baseDir</td>
+         *    <td>必填选项，指向MuPlayer编译后的静态文件资源目录。默认指向同版本线上CDN文件目录，但建议指向自己签出的dist文件夹目录，以规避潜在的flash跨域警告。</td>
+         *  </tr>
+         *  <tr>
          *    <td>mode</td>
-         *    <td>默认值: 'loop'。加入播放器的歌曲列表的播放顺序逻辑，可选值为 'loop'（循环播放），'list'（列表播放，该列表播放到最后一首或第一首后则停止播放），'single'（单曲播放），'random'（单曲随机），'list-random'（列表随机，与random的区别是保证已随机过的列表中歌曲均播放一次后，再对列表随机重置）。</td>
+         *    <td>默认值: 'loop'。加入播放器的歌曲列表的播放顺序逻辑，可选值为 'loop'（循环播放），'list'（列表播放，该列表播放到最后一首或第一首后则停止播放），'single'（单曲播放），'random'（随机），'list-random'（列表随机，与random的区别是保证已随机过的列表中歌曲均播放一次后，再对列表随机重置）。</td>
          *  </tr>
          *  <tr>
          *    <td>mute</td>
@@ -35,13 +64,26 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
          *    <td>默认值: 80。播放音量，取值范围0 - 100。</td>
          *  </tr>
          *  <tr>
-         *    <td>engine</td>
-         *    <td>初始化Engine，根据传入的engines来指定具体使用FlashMP3Core还是AudioCore来接管播放，当然也可以传入内核列表，Engine会内核所支持的音频格式做自适应。这里只看一下engines参数的可能值（其他参数一般无需配置，如有需要请查看engine.coffee的源码）：
+         *    <td>singleton</td>
+         *    <td>默认值: true。初始化的Player实例是否是单实例。如果希望一个页面中有多个播放实例并存，可以设成false</td>
+         *  </tr>
+         *  <tr>
+         *    <td>absoluteUrl</td>
+         *    <td>默认值: true。播放音频的链接是否要自动转化成绝对地址。</td>
+         *  </tr>
+         *  <tr>
+         *    <td>engines</td>
+         *    <td>初始化Engine，根据传入的engines来指定具体使用FlashMP3Core还是AudioCore来接管播放，当然也可以传入内核列表，Engine会根据内核所支持的音频格式做自适应。这里只看一下engines参数的可能值（其他参数一般无需配置，如有需要请查看engine.coffee的源码）：
          *    <pre>
-         *    engines: [{<br>
+         *    [{<br>
          *    <span class="ts"></span>constructor: 'FlashMP3Core',<br>
          *    <span class="ts"></span>args: { // 初始化FlashMP3Core的参数<br>
-         *    <span class="ts2"></span>swf: '../dist/swf/muplayer_mp3.swf' // 对应的swf文件路径<br>
+         *    <span class="ts2"></span>swf: 'muplayer_mp3.swf' // 对应的swf文件路径<br>
+         *    <span class="ts"></span>}<br>
+         *    }, {<br>
+         *    <span class="ts"></span>constructor: 'FlashMP4Core',<br>
+         *    <span class="ts"></span>args: { // 初始化FlashMP4Core的参数, FlashMP4Core支持m4a格式的音频文件<br>
+         *    <span class="ts2"></span>swf: 'muplayer_mp4.swf' // 对应的swf文件路径<br>
          *    <span class="ts"></span>}<br>
          *    }, {<br>
          *    <span class="ts"></span>constructor: 'AudioCore'<br>
@@ -51,21 +93,34 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
          *  </tr></table>
         ###
         constructor: (options) ->
-            if instance
-                return instance
-            instance = @
+            @opts = opts = $.extend({}, Player.defaults, options)
 
-            @opts = opts = $.extend(Player.defaults, options)
+            baseDir = opts.baseDir
+            if baseDir is false
+                baseDir = ''
+            else unless baseDir
+                throw "baseDir must be set! Usually, it should point to the MuPlayer's dist directory."
+            if baseDir and not baseDir.endsWith('/')
+                baseDir = baseDir + '/'
 
-            @playlist = new Playlist()
+            if opts.singleton
+                if instance
+                    return instance
+                instance = @
+
+            @playlist = new Playlist(absoluteUrl: opts.absoluteUrl)
             @playlist.setMode(opts.mode)
-            @_initEngine(new Engine(opts.engine))
+            @_initEngine(new Engine(
+                baseDir: baseDir
+                engines: opts.engines
+            ))
             @setMute(opts.mute)
             @setVolume(opts.volume)
 
         _initEngine: (engine) ->
             @engine = engine.on(EVENTS.STATECHANGE, (e) =>
                 st = e.newState
+                @trigger('player:statechange', e)
                 @trigger(st)
                 if st is STATES.END
                     @next(true)
@@ -73,6 +128,8 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
                 @trigger('timeupdate', pos)
             ).on(EVENTS.PROGRESS, (progress) =>
                 @trigger('progress', progress)
+            ).on(EVENTS.ERROR, (e) =>
+                @trigger('error', e)
             )
 
         ###*
@@ -81,22 +138,36 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
          * @return {player}
         ###
         play: (startTime) ->
-            startTime = ~~startTime
-            def = $.Deferred()
+            self = @
             engine = @engine
+            def = $.Deferred()
+            startTime = ~~startTime
 
-            play = () =>
-                if startTime
-                    engine.setCurrentPosition(startTime)
-                else
-                    engine.play()
-                @trigger('player:play', startTime)
-                def.resolve()
+            play = ->
+                setTimeout( ->
+                    if self.getUrl()
+                        if startTime
+                            engine.setCurrentPosition(startTime)
+                        else
+                            engine.play()
+                    self.trigger('player:play', startTime)
+                    def.resolve()
+                , 0)
 
-            # XXX: 应该在_fetch中决定是否发起选链。
-            # 即是否从cache中取, 是否setUrl都是依据_fetch的实现去决定。
-            # 如果继承时覆盖重写_fetch, 这些都要自己权衡。
-            @_fetch().done () ->
+            st = @getState()
+            # 只有如下3种情况会触发_fetch选链：
+            # 1) 内核首次使用或被reset过 (STATES.STOP)
+            # 2) 上一首歌播放完成自动触发下一首的播放 (STATES.END)
+            # 3) 某些移动浏览器无交互时不能触发自动播放 (会被卡在STATES.BUFFERING)
+            if st in [STATES.STOP, STATES.END] or st is STATES.BUFFERING and @curPos() is 0
+                # XXX: 应该在_fetch中决定是否发起选链。
+                # 即是否从cache中取, 是否setUrl都是依据_fetch的实现去决定。
+                # 如果继承时覆盖重写_fetch, 这些都要自己权衡。
+                @trigger('player:fetch:start')
+                @_fetch().done ->
+                    self.trigger('player:fetch:done')
+                    play()
+            else
                 play()
 
             return def.promise()
@@ -131,38 +202,25 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
          * <pre>cur // 调用prev时正在播放的歌曲</pre>
          * @return {player}
         ###
-        prev: () ->
-            cur = @getCur()
-            if @getSongsNum() and @playlist.prev()
-                @trigger('player:prev', {
-                    cur: cur
-                })
-                return @play()
-            @stop()
+        prev:  ->
+            ctrl.apply @, ['prev']
 
         ###*
          * 播放下一首歌。参数auto是布尔值，代表是否是因自动切歌而触发的（比如因为一首歌播放完会自动触发next方法，这时auto为true，其他主动调用auto应为undefined）。
          * 会派发 <code>player:next</code> 事件，事件参数：
          * <pre>auto // 是否为自动切歌
-         * cur  // 调用next时正在播放的歌曲</pre>
+         * cur // 调用next时正在播放的歌曲</pre>
          * @return {player}
         ###
         next: (auto) ->
-            cur = @getCur()
-            if @getSongsNum() and @playlist.next()
-                @trigger('player:next', {
-                    auto: auto,
-                    cur: cur
-                })
-                return @play()
-            @stop()
+            ctrl.apply @, ['next', auto]
 
         ###*
          * 获取当前歌曲（根据业务逻辑和选链_fetch方法的具体实现可以是音频文件url，也可以是标识id，默认直接传入音频文件url即可）。
          * 如果之前没有主动执行过setCur，则认为播放列表的第一首歌是当前歌曲。
          * @return {String}
         ###
-        getCur: () ->
+        getCur: ->
             pl = @playlist
             cur = pl.cur
             if not cur and @getSongsNum()
@@ -177,10 +235,12 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
         ###
         setCur: (sid) ->
             pl = @playlist
-            if sid
+            if not sid and @getSongsNum()
+                sid = pl.list[0]
+            if sid and @_sid isnt sid
                 pl.setCur(sid)
-            else if @getSongsNum()
-                pl.setCur(pl.list[0])
+                @_sid = sid
+                @stop()
             @
 
         ###*
@@ -228,7 +288,7 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
          * 如有特别需要可以自行扩展，比如通过监听 <code>player:reset</code> 来重置相关业务逻辑的标志位或事件等。
          * @return {player}
         ###
-        reset: () ->
+        reset: ->
             @playlist.reset()
             @engine.reset()
             @trigger('player:reset')
@@ -248,7 +308,9 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
          * @return {player}
         ###
         setUrl: (url) ->
+            return @ unless url
             @engine.setUrl(url)
+            @trigger('player:setUrl', url)
             @
 
         ###*
@@ -264,6 +326,8 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
         ###
         setVolume: (volume) ->
             @engine.setVolume(volume)
+            @trigger('player:setVolume', volume)
+            @
 
         ###*
          * 获取播放器音量。返回值范围：0 - 100
@@ -279,6 +343,7 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
         ###
         setMute: (mute) ->
             @engine.setMute(mute)
+            @trigger('player:setMute', mute)
             @
 
         ###*
@@ -300,7 +365,7 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
          * 播放列表中的歌曲总数。这一个快捷方法，如有更多需求，可自行获取播放列表：player.playlist.list。
          * @return {Number}
         ###
-        getSongsNum: () ->
+        getSongsNum: ->
             @playlist.list.length
 
         ###*
@@ -310,25 +375,31 @@ do (root = this, factory = (cfg, utils, Events, Playlist, Engine) ->
         ###
         setMode: (mode) ->
             @playlist.setMode(mode)
+            @trigger('player:setMode', mode)
             @
 
         ###*
          * 获取列表播放的模式。
          * @return {String}
         ###
-        getMode: () ->
+        getMode: ->
             @playlist.mode
+
+        getEngineType: ->
+            @engine.curEngine.engineType
 
         # 在基类的默认实现中将_fetch设计成Promise模式的接口调用似乎没有必要,
         # 但对于依赖API远程调用进行歌曲异步选链的场景下, Promise的处理无疑更具灵活性。
         # XXX: 如要实现自己的API选链逻辑，请务必重写_fetch方法。
-        _fetch: () ->
+        _fetch: ->
             def = $.Deferred()
-            if @getUrl() is @getCur()
+            cur = @getCur()
+
+            if @getUrl() is cur
                 def.resolve()
             else
-                setTimeout(() =>
-                    @setUrl(@getCur())
+                setTimeout( =>
+                    @setUrl(cur)
                     def.resolve()
                 , 0)
             def.promise()
